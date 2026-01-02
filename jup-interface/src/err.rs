@@ -162,6 +162,7 @@ impl Display for FmtErr<SwapQuoteErr<SvcCalcAgErr, SvcCalcAgErr, PricingAgErr>> 
             SwapQuoteErr::NotEnoughLiquidity(e) => Display::fmt(&FmtErr(e), f),
             // all variants here dont have any fields that require formatting
             SwapQuoteErr::InpCalc(_)
+            | SwapQuoteErr::InpDisabled
             | SwapQuoteErr::OutCalc(_)
             | SwapQuoteErr::Overflow
             | SwapQuoteErr::Pricing(_)
