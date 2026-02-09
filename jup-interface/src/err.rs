@@ -16,16 +16,13 @@ use inf1_std::{
     },
     inf1_svc_ag_std::{
         calc::SvcCalcAgErr,
-        update::{LidoUpdateErr, MarinadeUpdateErr, SplUpdateErr, UpdateSvcErr},
+        update::{InfUpdateErr, LidoUpdateErr, MarinadeUpdateErr, SplUpdateErr, UpdateSvcErr},
         SvcAg,
     },
-    quote::{rebalance::RebalanceQuoteErr, swap::err::SwapQuoteErr},
+    quote::{rebalance::RebalanceQuoteErr, swap::err::QuoteErr},
     update::UpdateErr,
 };
 use solana_pubkey::Pubkey;
-
-#[allow(deprecated)]
-use inf1_std::quote::liquidity::remove::RemoveLiqQuoteErr;
 
 /// Newtype wrapper to enable pretty-printing of pubkeys
 #[repr(transparent)]
@@ -66,19 +63,14 @@ impl Display for FmtErr<InfErr> {
                 "UnsupportedMint: {}",
                 Pubkey::new_from_array(mint)
             )),
-
-            // inner wrapper
             InfErr::PricingProg(e) => Display::fmt(&FmtErr(e), f),
             InfErr::RebalanceQuote(e) => Display::fmt(&FmtErr(e), f),
-            InfErr::RemoveLiqQuote(e) => Display::fmt(&FmtErr(e), f),
             InfErr::SwapQuote(e) => Display::fmt(&FmtErr(e), f),
             InfErr::UpdatePp(e) => Display::fmt(&FmtErr(e), f),
             InfErr::UpdateSvc(e) => Display::fmt(&FmtErr(e), f),
-
-            // no need to wrap, no pubkey fields
-            InfErr::AddLiqQuote(e) => Display::fmt(&e, f),
-
-            // no special formatting
+            // dont need to wrap inner in FmtErr since these errs do not
+            // contain pubkey fields
+            InfErr::Ctl(e) => Display::fmt(&e, f),
             InfErr::NoValidPda => Display::fmt(&self.0, f),
         }
     }
@@ -143,30 +135,17 @@ impl Display for FmtErr<RebalanceQuoteErr<SvcCalcAgErr, SvcCalcAgErr>> {
 }
 
 #[allow(deprecated)]
-impl Display for FmtErr<RemoveLiqQuoteErr<SvcCalcAgErr, PricingAgErr>> {
+impl Display for FmtErr<QuoteErr<SvcCalcAgErr, SvcCalcAgErr, PricingAgErr>> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self.0 {
-            RemoveLiqQuoteErr::NotEnoughLiquidity(e) => Display::fmt(&FmtErr(e), f),
+            QuoteErr::NotEnoughLiquidity(e) => Display::fmt(&FmtErr(e), f),
             // all variants here dont have any fields that require formatting
-            RemoveLiqQuoteErr::OutCalc(_)
-            | RemoveLiqQuoteErr::Pricing(_)
-            | RemoveLiqQuoteErr::Overflow
-            | RemoveLiqQuoteErr::ZeroValue => Display::fmt(&self.0, f),
-        }
-    }
-}
-
-impl Display for FmtErr<SwapQuoteErr<SvcCalcAgErr, SvcCalcAgErr, PricingAgErr>> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self.0 {
-            SwapQuoteErr::NotEnoughLiquidity(e) => Display::fmt(&FmtErr(e), f),
-            // all variants here dont have any fields that require formatting
-            SwapQuoteErr::InpCalc(_)
-            | SwapQuoteErr::InpDisabled
-            | SwapQuoteErr::OutCalc(_)
-            | SwapQuoteErr::Overflow
-            | SwapQuoteErr::Pricing(_)
-            | SwapQuoteErr::ZeroValue => Display::fmt(&self.0, f),
+            QuoteErr::OutCalc(_)
+            | QuoteErr::Pricing(_)
+            | QuoteErr::ZeroValue
+            | QuoteErr::InpCalc(_)
+            | QuoteErr::InpDisabled
+            | QuoteErr::PoolLoss => Display::fmt(&self.0, f),
         }
     }
 }
@@ -212,12 +191,23 @@ impl Display for FmtErr<FlatSlabPricingUpdateErr> {
 impl Display for FmtErr<UpdateSvcErr> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self.0 {
+            SvcAg::Inf(e) => Display::fmt(&FmtErr(e), f),
             SvcAg::Lido(e) => Display::fmt(&FmtErr(e), f),
             SvcAg::Marinade(e) => Display::fmt(&FmtErr(e), f),
             SvcAg::SanctumSpl(e) | SvcAg::SanctumSplMulti(e) | SvcAg::Spl(e) => {
                 Display::fmt(&FmtErr(e), f)
             }
             SvcAg::Wsol(_infallible) => unreachable!(),
+        }
+    }
+}
+
+impl Display for FmtErr<InfUpdateErr> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            InfUpdateErr::AccDeser { pk } => {
+                f.write_fmt(format_args!("AccDeser: {}", Pubkey::new_from_array(pk)))
+            }
         }
     }
 }

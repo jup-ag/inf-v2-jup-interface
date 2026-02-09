@@ -4,9 +4,9 @@ use anyhow::anyhow;
 use generic_array_struct::generic_array_struct;
 use inf1_jup_interface::InfAmm;
 use inf1_std::inf1_ctl_core::{
-    instructions::{
-        liquidity::{add::AddLiquidityIxData, remove::RemoveLiquidityIxData, IxArgs as LiqIxArgs},
-        swap::{exact_in::SwapExactInIxData, exact_out::SwapExactOutIxData, IxArgs as SwapIxArgs},
+    instructions::swap::{
+        v1::{exact_in::SwapExactInIxData, exact_out::SwapExactOutIxData},
+        IxArgs as SwapIxArgs,
     },
     keys::LST_STATE_LIST_ID,
 };
@@ -190,38 +190,16 @@ fn saam_to_inf_ix(
                 },
             };
             match swap_mode {
-                SwapMode::ExactIn => SwapExactInIxData::new(ix_args).as_buf().to_vec(),
-                SwapMode::ExactOut => SwapExactOutIxData::new(ix_args).as_buf().to_vec(),
+                SwapMode::ExactIn => SwapExactInIxData::new(&ix_args).as_buf().to_vec(),
+                SwapMode::ExactOut => SwapExactOutIxData::new(&ix_args).as_buf().to_vec(),
             }
         }
-        Swap::SanctumSAddLiquidity {
-            lst_value_calc_accs,
-            lst_index,
-        } => AddLiquidityIxData::new(LiqIxArgs {
-            lst_value_calc_accs,
-            lst_index,
-            amount,
-            min_out: 0,
-        })
-        .as_buf()
-        .to_vec(),
-        Swap::SanctumSRemoveLiquidity {
-            lst_value_calc_accs,
-            lst_index,
-        } => RemoveLiquidityIxData::new(LiqIxArgs {
-            lst_value_calc_accs,
-            lst_index,
-            amount,
-            min_out: 0,
-        })
-        .as_buf()
-        .to_vec(),
         _ => unreachable!(),
     };
     // Refer to `get_swap_and_account_metas` to view changes
     // that we made to the vanilla instruction that we need to undo here:
     // - account inserted at front
-    // - all is_signer set to false. All 4 swap instructions have
+    // - all is_signer set to false. All swap instructions have
     //   signer as the first account
     account_metas.remove(0);
     account_metas[0].is_signer = true;

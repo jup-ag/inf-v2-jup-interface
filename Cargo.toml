@@ -40,7 +40,8 @@ solana-sha256-hasher = { version = "^2.2.1", default-features = false }
 sanctum-lst-list = { git = "https://github.com/jup-ag/sanctum-lst-list.git", rev = "dbf31ad5e91e4b0f7402c05bc56c779b4049c8c7" }
 
 # inf-1.5 crates
-inf1-std = { git = "https://github.com/igneous-labs/inf-1.5.git", branch = "master" }
+# TODO: change to branch = "master" when v2 merged
+inf1-std = { git = "https://github.com/igneous-labs/inf-1.5.git", rev = "c8cabce7c7c3abc3516cc791fc223b7b5889388f" }
 
 # workspace members
 test-utils = { path = "./test-utils" }
