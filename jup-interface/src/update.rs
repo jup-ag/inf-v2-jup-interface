@@ -4,7 +4,7 @@ use solana_pubkey::Pubkey;
 
 #[derive(Debug, Clone, Copy)]
 #[repr(transparent)]
-pub(crate) struct AccountRef<'a>(pub &'a solana_account::Account);
+pub struct AccountRef<'a>(pub &'a solana_account::Account);
 
 impl Account for AccountRef<'_> {
     #[inline]
@@ -15,7 +15,7 @@ impl Account for AccountRef<'_> {
 
 #[derive(Debug, Clone, Copy)]
 #[repr(transparent)]
-pub(crate) struct AccountMapRef<'a>(pub &'a AccountMap);
+pub struct AccountMapRef<'a>(pub &'a AccountMap);
 
 impl UpdateMap for AccountMapRef<'_> {
     type Account<'acc>
