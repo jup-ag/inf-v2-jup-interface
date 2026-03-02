@@ -61,10 +61,9 @@ use crate::{
 pub mod clock;
 pub mod consts;
 pub mod err;
+pub mod pda;
+pub mod sanctum_lst_list;
 pub mod update;
-
-mod pda;
-mod sanctum_lst_list;
 
 pub const INF_PROGRAM_ID: Pubkey = Pubkey::new_from_array(inf1_std::inf1_ctl_core::ID);
 pub const INF_LST_LIST_ID: Pubkey = Pubkey::new_from_array(LST_STATE_LIST_ID);
