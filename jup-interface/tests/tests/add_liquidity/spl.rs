@@ -1,5 +1,5 @@
 use inf1_jup_interface::consts::INF_MINT_ADDR;
-use jupiter_amm_interface::{QuoteParams, SwapMode};
+use jupiter_amm_interface::{FeeMode, QuoteParams, SwapMode};
 use test_utils::{KeyedUiAccount, ALL_FIXTURES, CONST_PUBKEYS};
 
 use crate::common::{swap_test, SwapUserAccs};
@@ -19,6 +19,7 @@ fn add_liq_jupsol_fixture_basic() {
             input_mint: *CONST_PUBKEYS.jupsol_mint(),
             output_mint: INF_MINT_ADDR.into(),
             swap_mode: SwapMode::ExactIn,
+            fee_mode: FeeMode::Normal,
         },
         &ALL_FIXTURES,
         fixtures_accs().map(|n| KeyedUiAccount::from_test_fixtures_json(n).into_keyed_account()),

@@ -1,3 +1,6 @@
+#![allow(unexpected_cfgs)]
+#![cfg(not(target_os = "solana"))]
+
 use std::{
     collections::HashMap,
     iter::once,
@@ -7,6 +10,7 @@ use std::{
     },
 };
 
+pub use ::inf1_std;
 use ::sanctum_lst_list::{PoolInfo, SanctumLst};
 use anyhow::{anyhow, Context, Result};
 use inf1_std::{
@@ -29,18 +33,18 @@ use inf1_std::{
         update::UpdateSvc,
         SvcAg,
     },
-    instructions::swap::{
-        exact_in::{swap_exact_in_ix_is_writer, swap_exact_in_ix_keys_owned},
-        exact_out::{swap_exact_out_ix_is_writer, swap_exact_out_ix_keys_owned},
+    instructions::swap::v2::{
+        exact_in::{swap_exact_in_v2_ix_is_writer, swap_exact_in_v2_ix_keys_owned},
+        exact_out::{swap_exact_out_v2_ix_is_writer, swap_exact_out_v2_ix_keys_owned},
     },
-    quote::swap::err::SwapQuoteErr,
+    quote::swap::err::QuoteErr,
     trade::{instruction::TradeIxArgs, Trade, TradeLimitTy},
     update::UpdateErr,
     InfStd,
 };
 use jupiter_amm_interface::{
-    single_program_amm, AccountMap, Amm, AmmContext, KeyedAccount, Quote, QuoteParams,
-    SingleProgramAmm, Swap, SwapAndAccountMetas, SwapMode, SwapParams,
+    AccountMap, Amm, AmmContext, KeyedAccount, Quote, QuoteParams, Swap, SwapAndAccountMetas,
+    SwapMode, SwapParams,
 };
 use rust_decimal::Decimal;
 use solana_instruction::AccountMeta;
@@ -50,15 +54,6 @@ use crate::{
     clock::is_epoch_affected_lst_mint,
     consts::{DEFAULT_MAINNET_POOL, LABEL},
     err::FmtErr,
-    pda::{create_raw_pda, find_pda},
-    sanctum_lst_list::load_sanctum_lst_list,
-    update::AccountMapRef,
-};
-
-#[allow(deprecated)]
-use inf1_std::instructions::liquidity::{
-    add::{add_liquidity_ix_is_writer, add_liquidity_ix_keys_owned},
-    remove::{remove_liquidity_ix_is_writer, remove_liquidity_ix_keys_owned},
 };
 
 pub mod clock;
@@ -66,8 +61,12 @@ pub mod consts;
 pub mod err;
 pub mod update;
 
-mod pda;
-mod sanctum_lst_list;
+pub mod pda;
+pub mod sanctum_lst_list;
+
+pub use pda::{create_raw_pda, find_pda};
+pub use sanctum_lst_list::load_sanctum_lst_list;
+pub use update::{AccountMapRef, AccountRef};
 
 pub const INF_PROGRAM_ID: Pubkey = Pubkey::new_from_array(inf1_std::inf1_ctl_core::ID);
 pub const INF_LST_LIST_ID: Pubkey = Pubkey::new_from_array(LST_STATE_LIST_ID);
@@ -82,19 +81,18 @@ pub const INF_LST_LIST_ID: Pubkey = Pubkey::new_from_array(LST_STATE_LIST_ID);
 //   fail due to the underlying stake pool not being updated for the epoch
 // - we only check for underlying stake pool not being updated for the epoch
 //   during the quoting procedure to determine whether to return err
-
 fn build_spl_lsts() -> HashMap<[u8; 32], [u8; 32]> {
-    load_sanctum_lst_list()
+    sanctum_lst_list::load_sanctum_lst_list()
         .into_iter()
         .filter_map(|SanctumLst { mint, pool, .. }| {
             let stake_pool_address = match pool {
-                PoolInfo::Lido => return None,
-                PoolInfo::Marinade => return None,
-                PoolInfo::ReservePool => return None,
-                PoolInfo::SanctumSpl(spl_pool_accounts) => spl_pool_accounts.pool.to_bytes(),
-                PoolInfo::Spl(spl_pool_accounts) => spl_pool_accounts.pool.to_bytes(),
-                PoolInfo::SPool(_) => return None,
-                PoolInfo::SanctumSplMulti(spl_pool_accounts) => spl_pool_accounts.pool.to_bytes(),
+                PoolInfo::Lido
+                | PoolInfo::Marinade
+                | PoolInfo::ReservePool
+                | PoolInfo::SPool(_) => return None,
+                PoolInfo::SanctumSpl(spl_pool_accounts)
+                | PoolInfo::Spl(spl_pool_accounts)
+                | PoolInfo::SanctumSplMulti(spl_pool_accounts) => spl_pool_accounts.pool.to_bytes(),
             };
             Some((mint.to_bytes(), stake_pool_address))
         })
@@ -106,9 +104,10 @@ pub struct InfAmm {
     pub inner: InfStd,
     pub current_epoch: Arc<AtomicU64>,
 }
-single_program_amm!(InfAmm, INF_PROGRAM_ID, LABEL);
 
 impl InfAmm {
+    pub const PROGRAM_ID: Pubkey = INF_PROGRAM_ID;
+
     pub fn new(
         keyed_account: &KeyedAccount,
         amm_context: &AmmContext,
@@ -136,7 +135,6 @@ impl InfAmm {
 
         // need to initialize sol val calc data for all LSTs on the list
         // so that first update doesnt fail with InfErr::MissingSvcData
-
         let lst_state_list = LstStatePackedList::of_acc_data(&keyed_account.account.data)
             .context("LstStatePackedList::of_acc_data failed")?;
         lst_state_list
@@ -175,7 +173,7 @@ impl Amm for InfAmm {
     }
 
     fn program_id(&self) -> Pubkey {
-        inf1_std::inf1_ctl_core::ID.into()
+        INF_PROGRAM_ID
     }
 
     /// S Pools are 1 per program, so just use program ID as key
@@ -188,7 +186,7 @@ impl Amm for InfAmm {
         lst_state_list
             .iter()
             .map(|s| s.into_lst_state().mint.into())
-            .chain(once(self.inner.pool.lp_token_mint.into()))
+            .chain(once((*self.inner.pool.lp_token_mint()).into()))
             .collect()
     }
 
@@ -197,13 +195,13 @@ impl Amm for InfAmm {
         let lst_state_iter = self
             .inner
             .try_lst_state_list()
-            .unwrap_or_default() // TODO: should this panic instead if LstStateList format unexpectedly changed?
+            .unwrap_or_default()
             .iter()
             .map(|l| l.into_lst_state());
         [
             POOL_STATE_ID,
             LST_STATE_LIST_ID,
-            self.inner.pool.lp_token_mint,
+            *self.inner.pool.lp_token_mint(),
         ]
         .into_iter()
         .chain(
@@ -214,7 +212,7 @@ impl Amm for InfAmm {
         .chain(
             lst_state_iter
                 .filter_map(|lst_state| {
-                    // ignore err here, some LSTs may not have their.
+                    // ignore err here, some LSTs may not have their
                     // sol val calc accounts fetched yet.
                     //
                     // update() should call `try_get_or_init_lst_svc_mut`
@@ -236,7 +234,7 @@ impl Amm for InfAmm {
         self.inner.update_lst_state_list(fetched).map_err(FmtErr)?;
         self.inner.update_lp_token_supply(fetched).map_err(FmtErr)?;
 
-        let InfStd {
+        let inf1_std::Inf {
             lst_state_list_data,
             pricing,
             lst_calcs,
@@ -261,24 +259,32 @@ impl Amm for InfAmm {
 
         all_lst_states
             .try_for_each(|lst_state| {
-                InfStd::update_lst_reserves(lst_reserves, create_pda as &_, &lst_state, fetched)?;
+                inf1_std::InfStd::update_lst_reserves(
+                    lst_reserves,
+                    create_pda as &_,
+                    &lst_state,
+                    fetched,
+                )?;
 
-                let calc =
-                    match InfStd::try_get_or_init_lst_svc_static(lst_calcs, spl_lsts, &lst_state) {
-                        Ok(calc) => calc,
-                        Err(error) => {
-                            // Do not cause an error when we don't have the necessary spl data for a LST
-                            if matches!(error, InfErr::MissingSplData { .. }) {
-                                lst_calcs.remove(&lst_state.mint);
-                                return Ok(());
-                            } else {
-                                return Err(UpdateErr::Inner(error));
-                            }
+                let calc = match inf1_std::InfStd::try_get_or_init_lst_svc_static(
+                    lst_calcs, spl_lsts, &lst_state,
+                ) {
+                    Ok(calc) => calc,
+                    Err(error) => {
+                        if matches!(error, InfErr::MissingSplData { .. }) {
+                            lst_calcs.remove(&lst_state.mint);
+                            return Ok(());
+                        } else {
+                            return Err(UpdateErr::Inner(error));
                         }
-                    };
+                    }
+                };
 
                 match &mut calc.0 {
                     // omit clock for these variants
+                    SvcAg::Inf(c) => c
+                        .update_svc(fetched)
+                        .map_err(|e| e.map_inner(SvcAg::Inf).map_inner(InfErr::UpdateSvc)),
                     SvcAg::Lido(c) => c
                         .update_svc_no_clock(fetched)
                         .map_err(|e| e.map_inner(SvcAg::Lido).map_inner(InfErr::UpdateSvc)),
@@ -292,7 +298,6 @@ impl Amm for InfAmm {
                     SvcAg::Spl(c) => c
                         .update_svc_no_clock(fetched)
                         .map_err(|e| e.map_inner(SvcAg::Spl).map_inner(InfErr::UpdateSvc)),
-
                     // following variants unaffected by clock
                     SvcAg::Marinade(c) => c
                         .update_svc(fetched)
@@ -325,6 +330,7 @@ impl Amm for InfAmm {
             if !is_epoch_affected_lst_mint(mint) {
                 continue;
             }
+
             // since INF is not clock affected, we dont need to
             // worry about try_get_lst_svc() failing for it.
             // In future vers, INF will also have its own sol val calc anyway.
@@ -334,26 +340,26 @@ impl Amm for InfAmm {
                 .map_err(FmtErr)?
                 .as_sol_val_calc()
             {
-                // kinda sloppy, but if NotUpdated err encountered, just return it under
-                // SwapQuoteErr::InpCalc instead of determining what kind of swap and
-                // what position the affected mint was in
                 Some(c) => match c {
-                    SvcAg::Marinade(_) | SvcAg::Wsol(_) => continue,
+                    SvcAg::Inf(_) | SvcAg::Marinade(_) | SvcAg::Wsol(_) => continue,
+                    // kinda sloppy, but if NotUpdated err encountered, just return it under
+                    // QuoteErr::InpCalc instead of determining what kind of swap and
+                    // what position the affected mint was in
                     SvcAg::Lido(c) => {
                         if c.exchange_rate.computed_in_epoch
                             < self.current_epoch.load(Ordering::Relaxed)
                         {
-                            return Err(FmtErr(InfErr::SwapQuote(SwapQuoteErr::InpCalc(
-                                SvcAg::Lido(LidoCalcErr::NotUpdated),
-                            )))
+                            return Err(FmtErr(InfErr::SwapQuote(QuoteErr::InpCalc(SvcAg::Lido(
+                                LidoCalcErr::NotUpdated,
+                            ))))
                             .into());
                         }
                     }
                     SvcAg::SanctumSpl(c) | SvcAg::SanctumSplMulti(c) | SvcAg::Spl(c) => {
                         if c.last_update_epoch < self.current_epoch.load(Ordering::Relaxed) {
-                            return Err(FmtErr(InfErr::SwapQuote(SwapQuoteErr::InpCalc(
-                                SvcAg::Spl(SplCalcErr::NotUpdated),
-                            )))
+                            return Err(FmtErr(InfErr::SwapQuote(QuoteErr::InpCalc(SvcAg::Spl(
+                                SplCalcErr::NotUpdated,
+                            ))))
                             .into());
                         }
                     }
@@ -362,7 +368,7 @@ impl Amm for InfAmm {
             }
         }
 
-        match self
+        let quote = self
             .inner
             .quote_trade(
                 &Pair {
@@ -370,17 +376,12 @@ impl Amm for InfAmm {
                     out: output_mint.as_array(),
                 },
                 *amount,
+                0,
                 swap_mode_to_trade_limit_ty(*swap_mode),
             )
-            .map_err(FmtErr)?
-        {
-            #[allow(deprecated)]
-            Trade::AddLiquidity(q) => to_jup_quote(q.fee_mint(), q.0),
-            #[allow(deprecated)]
-            Trade::RemoveLiquidity(q) => to_jup_quote(q.fee_mint(), q.0),
-            Trade::SwapExactIn(q) => to_jup_quote(q.fee_mint(), q.0),
-            Trade::SwapExactOut(q) => to_jup_quote(q.fee_mint(), q.0),
-        }
+            .map_err(FmtErr)?;
+
+        to_jup_quote(quote)
     }
 
     fn get_swap_and_account_metas(
@@ -399,8 +400,8 @@ impl Amm for InfAmm {
     ) -> Result<SwapAndAccountMetas> {
         let limit_ty = swap_mode_to_trade_limit_ty(*swap_mode);
         let (amt, limit) = match limit_ty {
-            TradeLimitTy::ExactIn => (in_amount, out_amount),
-            TradeLimitTy::ExactOut => (out_amount, in_amount),
+            TradeLimitTy::ExactIn(_) => (in_amount, out_amount),
+            TradeLimitTy::ExactOut(_) => (out_amount, in_amount),
         };
         let args = TradeIxArgs {
             amt: *amt,
@@ -415,47 +416,18 @@ impl Amm for InfAmm {
                 out: destination_token_account.as_array(),
             },
         };
+
         let ix = self.inner.trade_ix(&args, limit_ty).map_err(FmtErr)?;
-        let mut account_metas = vec![AccountMeta::new_readonly(Self::PROGRAM_ID, false)];
-        Ok(match ix {
-            Trade::AddLiquidity(ix) => {
+        let mut account_metas = vec![AccountMeta::new_readonly(INF_PROGRAM_ID, false)];
+
+        match ix {
+            Trade::ExactIn(ix) => {
                 let a = ix.to_full();
-                #[allow(deprecated)]
                 account_metas.extend(keys_writable_to_jup_metas(
-                    add_liquidity_ix_keys_owned(&ix.accs).seq(),
-                    add_liquidity_ix_is_writer(&ix.accs).seq(),
+                    swap_exact_in_v2_ix_keys_owned(&ix.accs).seq(),
+                    swap_exact_in_v2_ix_is_writer(&ix.accs).seq(),
                 ));
-                SwapAndAccountMetas {
-                    swap: Swap::SanctumSAddLiquidity {
-                        lst_value_calc_accs: a.lst_value_calc_accs,
-                        lst_index: a.lst_index,
-                    },
-                    account_metas,
-                }
-            }
-            Trade::RemoveLiquidity(ix) => {
-                let a = ix.to_full();
-                #[allow(deprecated)]
-                account_metas.extend(keys_writable_to_jup_metas(
-                    remove_liquidity_ix_keys_owned(&ix.accs).seq(),
-                    remove_liquidity_ix_is_writer(&ix.accs).seq(),
-                ));
-                SwapAndAccountMetas {
-                    swap: Swap::SanctumSRemoveLiquidity {
-                        lst_value_calc_accs: a.lst_value_calc_accs,
-                        lst_index: a.lst_index,
-                    },
-                    account_metas,
-                }
-            }
-            Trade::SwapExactIn(ix) => {
-                let a = ix.to_full();
-                #[allow(deprecated)]
-                account_metas.extend(keys_writable_to_jup_metas(
-                    swap_exact_in_ix_keys_owned(&ix.accs).seq(),
-                    swap_exact_in_ix_is_writer(&ix.accs).seq(),
-                ));
-                SwapAndAccountMetas {
+                Ok(SwapAndAccountMetas {
                     swap: Swap::SanctumS {
                         src_lst_value_calc_accs: a.inp_lst_value_calc_accs,
                         dst_lst_value_calc_accs: a.out_lst_value_calc_accs,
@@ -463,16 +435,15 @@ impl Amm for InfAmm {
                         dst_lst_index: a.out_lst_index,
                     },
                     account_metas,
-                }
+                })
             }
-            Trade::SwapExactOut(ix) => {
+            Trade::ExactOut(ix) => {
                 let a = ix.to_full();
-                #[allow(deprecated)]
                 account_metas.extend(keys_writable_to_jup_metas(
-                    swap_exact_out_ix_keys_owned(&ix.accs).seq(),
-                    swap_exact_out_ix_is_writer(&ix.accs).seq(),
+                    swap_exact_out_v2_ix_keys_owned(&ix.accs).seq(),
+                    swap_exact_out_v2_ix_is_writer(&ix.accs).seq(),
                 ));
-                SwapAndAccountMetas {
+                Ok(SwapAndAccountMetas {
                     swap: Swap::SanctumS {
                         src_lst_value_calc_accs: a.inp_lst_value_calc_accs,
                         dst_lst_value_calc_accs: a.out_lst_value_calc_accs,
@@ -480,9 +451,9 @@ impl Amm for InfAmm {
                         dst_lst_index: a.out_lst_index,
                     },
                     account_metas,
-                }
+                })
             }
-        })
+        }
     }
 
     fn clone_amm(&self) -> Box<dyn Amm + Send + Sync> {
@@ -494,8 +465,9 @@ impl Amm for InfAmm {
     }
 
     fn supports_exact_out(&self) -> bool {
-        // Because AddLiquidity and RemoveLiquidity does not support
-        false
+        // Because AddLiquidity and RemoveLiquidity do not support exact out,
+        // this only reflects the swap path.
+        true
     }
 
     fn program_dependencies(&self) -> Vec<(Pubkey, String)> {
@@ -547,38 +519,33 @@ pub const PROGRAM_DEPENDENCIES: [([u8; 32], &str); 12] = [
 #[inline]
 pub const fn swap_mode_to_trade_limit_ty(sm: SwapMode) -> TradeLimitTy {
     match sm {
-        SwapMode::ExactIn => TradeLimitTy::ExactIn,
-        SwapMode::ExactOut => TradeLimitTy::ExactOut,
+        SwapMode::ExactIn => TradeLimitTy::ExactIn(()),
+        SwapMode::ExactOut => TradeLimitTy::ExactOut(()),
     }
 }
 
 #[inline]
 pub fn to_jup_quote(
-    fee_mint: &[u8; 32],
     inf1_std::quote::Quote {
         inp: in_amount,
         out: out_amount,
-        lp_fee,
-        protocol_fee,
+        fee,
+        inp_sol_val,
         inp_mint,
         out_mint: _,
     }: inf1_std::quote::Quote,
 ) -> Result<Quote, anyhow::Error> {
-    let fee_amount = lp_fee.saturating_add(protocol_fee);
-    let fee_pct_f64 = {
-        let denom = if *fee_mint == inp_mint {
-            in_amount
-        } else {
-            out_amount.saturating_add(fee_amount)
-        };
-        (fee_amount as f64) / (denom as f64)
+    let fee_pct_f64 = if inp_sol_val == 0 {
+        0.0
+    } else {
+        (fee as f64) / (inp_sol_val as f64)
     };
     let fee_pct = Decimal::from_f64_retain(fee_pct_f64).ok_or_else(|| anyhow!("Decimal err"))?;
     Ok(Quote {
         in_amount,
         out_amount,
-        fee_amount,
-        fee_mint: Pubkey::new_from_array(*fee_mint),
+        fee_amount: fee,
+        fee_mint: Pubkey::new_from_array(inp_mint),
         fee_pct,
     })
 }

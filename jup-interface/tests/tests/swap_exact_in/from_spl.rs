@@ -3,7 +3,7 @@ use inf1_std::inf1_svc_ag_std::{
     inf1_svc_lido_core::solido_legacy_core::STSOL_MINT_ADDR,
     inf1_svc_marinade_core::sanctum_marinade_liquid_staking_core::MSOL_MINT_ADDR,
 };
-use jupiter_amm_interface::{QuoteParams, SwapMode};
+use jupiter_amm_interface::{FeeMode, QuoteParams, SwapMode};
 use solana_pubkey::Pubkey;
 use test_utils::{KeyedUiAccount, ALL_FIXTURES, CONST_PUBKEYS};
 
@@ -14,6 +14,7 @@ const QUOTE_PARAMS: QuoteParams = QuoteParams {
     input_mint: *CONST_PUBKEYS.jupsol_mint(),
     output_mint: Pubkey::new_from_array([0u8; 32]),
     swap_mode: SwapMode::ExactIn,
+    fee_mode: FeeMode::Normal,
 };
 
 fn fixtures_accs_base() -> SwapUserAccs<&'static str> {

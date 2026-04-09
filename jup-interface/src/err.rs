@@ -4,7 +4,7 @@ use std::{
 };
 
 use inf1_std::{
-    err::{InfErr, NotEnoughLiquidityErr},
+    err::InfErr,
     inf1_pp_ag_std::{
         inf1_pp_flatfee_std::{traits::FlatFeePricingColErr, update::FlatFeePricingUpdateErr},
         inf1_pp_flatslab_std::{
@@ -19,13 +19,10 @@ use inf1_std::{
         update::{LidoUpdateErr, MarinadeUpdateErr, SplUpdateErr, UpdateSvcErr},
         SvcAg,
     },
-    quote::{rebalance::RebalanceQuoteErr, swap::err::SwapQuoteErr},
+    quote::{rebalance::RebalanceQuoteErr, swap::err::QuoteErr},
     update::UpdateErr,
 };
 use solana_pubkey::Pubkey;
-
-#[allow(deprecated)]
-use inf1_std::quote::liquidity::remove::RemoveLiqQuoteErr;
 
 /// Newtype wrapper to enable pretty-printing of pubkeys
 #[repr(transparent)]
@@ -43,6 +40,7 @@ impl Display for FmtErr<InfErr> {
             InfErr::AccDeser { pk } => {
                 f.write_fmt(format_args!("AccDeser: {}", Pubkey::new_from_array(pk)))
             }
+            InfErr::Ctl(_) => Display::fmt(&self.0, f),
             InfErr::MissingAcc { pk } => {
                 f.write_fmt(format_args!("MissingAcc: {}", Pubkey::new_from_array(pk)))
             }
@@ -66,18 +64,12 @@ impl Display for FmtErr<InfErr> {
                 "UnsupportedMint: {}",
                 Pubkey::new_from_array(mint)
             )),
-
             // inner wrapper
             InfErr::PricingProg(e) => Display::fmt(&FmtErr(e), f),
             InfErr::RebalanceQuote(e) => Display::fmt(&FmtErr(e), f),
-            InfErr::RemoveLiqQuote(e) => Display::fmt(&FmtErr(e), f),
             InfErr::SwapQuote(e) => Display::fmt(&FmtErr(e), f),
             InfErr::UpdatePp(e) => Display::fmt(&FmtErr(e), f),
             InfErr::UpdateSvc(e) => Display::fmt(&FmtErr(e), f),
-
-            // no need to wrap, no pubkey fields
-            InfErr::AddLiqQuote(e) => Display::fmt(&e, f),
-
             // no special formatting
             InfErr::NoValidPda => Display::fmt(&self.0, f),
         }
@@ -101,9 +93,9 @@ impl Error for FmtErr<UpdateErr<InfErr>> {}
 
 impl Display for FmtErr<PricingProgAgErr> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self.0 {
-            PricingAg::FlatFee(e) => Display::fmt(&FmtErr(e), f),
-            PricingAg::FlatSlab(e) => Display::fmt(&FmtErr(e), f),
+        match &self.0 {
+            PricingAg::FlatFee(e) => Display::fmt(e, f),
+            PricingAg::FlatSlab(e) => Display::fmt(e, f),
         }
     }
 }
@@ -130,6 +122,16 @@ impl Display for FmtErr<FlatSlabPricingColErr> {
     }
 }
 
+impl Display for FmtErr<MintNotFoundErr> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let MintNotFoundErr { mint, .. } = self.0;
+        f.write_fmt(format_args!(
+            "MintNotFound: {}",
+            Pubkey::new_from_array(mint)
+        ))
+    }
+}
+
 impl Display for FmtErr<RebalanceQuoteErr<SvcCalcAgErr, SvcCalcAgErr>> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self.0 {
@@ -142,35 +144,22 @@ impl Display for FmtErr<RebalanceQuoteErr<SvcCalcAgErr, SvcCalcAgErr>> {
     }
 }
 
-#[allow(deprecated)]
-impl Display for FmtErr<RemoveLiqQuoteErr<SvcCalcAgErr, PricingAgErr>> {
+impl Display for FmtErr<QuoteErr<SvcCalcAgErr, SvcCalcAgErr, PricingAgErr>> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self.0 {
-            RemoveLiqQuoteErr::NotEnoughLiquidity(e) => Display::fmt(&FmtErr(e), f),
-            // all variants here dont have any fields that require formatting
-            RemoveLiqQuoteErr::OutCalc(_)
-            | RemoveLiqQuoteErr::Pricing(_)
-            | RemoveLiqQuoteErr::Overflow
-            | RemoveLiqQuoteErr::ZeroValue => Display::fmt(&self.0, f),
+            QuoteErr::NotEnoughLiquidity(e) => Display::fmt(&FmtErr(e), f),
+            // all remaining variants here dont have any fields that require formatting
+            QuoteErr::InpCalc(_)
+            | QuoteErr::InpDisabled
+            | QuoteErr::OutCalc(_)
+            | QuoteErr::PoolLoss
+            | QuoteErr::Pricing(_)
+            | QuoteErr::ZeroValue => Display::fmt(&self.0, f),
         }
     }
 }
 
-impl Display for FmtErr<SwapQuoteErr<SvcCalcAgErr, SvcCalcAgErr, PricingAgErr>> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self.0 {
-            SwapQuoteErr::NotEnoughLiquidity(e) => Display::fmt(&FmtErr(e), f),
-            // all variants here dont have any fields that require formatting
-            SwapQuoteErr::InpCalc(_)
-            | SwapQuoteErr::OutCalc(_)
-            | SwapQuoteErr::Overflow
-            | SwapQuoteErr::Pricing(_)
-            | SwapQuoteErr::ZeroValue => Display::fmt(&self.0, f),
-        }
-    }
-}
-
-impl Display for FmtErr<NotEnoughLiquidityErr> {
+impl Display for FmtErr<inf1_std::err::NotEnoughLiquidityErr> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.write_fmt(format_args!(
             "NotEnoughLiquidity. Required: {}. Available: {}",
@@ -181,9 +170,9 @@ impl Display for FmtErr<NotEnoughLiquidityErr> {
 
 impl Display for FmtErr<PricingAg<FlatFeePricingUpdateErr, FlatSlabPricingUpdateErr>> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self.0 {
-            PricingAg::FlatFee(e) => Display::fmt(&FmtErr(e), f),
-            PricingAg::FlatSlab(e) => Display::fmt(&FmtErr(e), f),
+        match &self.0 {
+            PricingAg::FlatFee(e) => Display::fmt(e, f),
+            PricingAg::FlatSlab(e) => Display::fmt(e, f),
         }
     }
 }
@@ -211,6 +200,7 @@ impl Display for FmtErr<FlatSlabPricingUpdateErr> {
 impl Display for FmtErr<UpdateSvcErr> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self.0 {
+            SvcAg::Inf(_) => Display::fmt(&self.0, f),
             SvcAg::Lido(e) => Display::fmt(&FmtErr(e), f),
             SvcAg::Marinade(e) => Display::fmt(&FmtErr(e), f),
             SvcAg::SanctumSpl(e) | SvcAg::SanctumSplMulti(e) | SvcAg::Spl(e) => {
