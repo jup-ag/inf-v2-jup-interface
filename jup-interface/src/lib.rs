@@ -16,8 +16,7 @@ use anyhow::{anyhow, Context, Result};
 use inf1_std::{
     err::InfErr,
     inf1_ctl_core::{
-        accounts::lst_state_list::LstStatePackedList,
-        keys::{LST_STATE_LIST_ID, POOL_STATE_ID},
+        accounts::lst_state_list::LstStatePackedList, keys::CONST_KEYS_OWNED,
         typedefs::lst_state::LstState,
     },
     inf1_pp_ag_std::{
@@ -37,6 +36,7 @@ use inf1_std::{
         exact_in::{swap_exact_in_v2_ix_is_writer, swap_exact_in_v2_ix_keys_owned},
         exact_out::{swap_exact_out_v2_ix_is_writer, swap_exact_out_v2_ix_keys_owned},
     },
+    pda::CONST_PDA_KEYS_OWNED,
     quote::swap::err::QuoteErr,
     trade::{instruction::TradeIxArgs, Trade, TradeLimitTy},
     update::UpdateErr,
@@ -68,8 +68,8 @@ pub use pda::{create_raw_pda, find_pda};
 pub use sanctum_lst_list::load_sanctum_lst_list;
 pub use update::{AccountMapRef, AccountRef};
 
-pub const INF_PROGRAM_ID: Pubkey = Pubkey::new_from_array(inf1_std::inf1_ctl_core::ID);
-pub const INF_LST_LIST_ID: Pubkey = Pubkey::new_from_array(LST_STATE_LIST_ID);
+pub const INF_PROGRAM_ID: Pubkey = Pubkey::new_from_array(*CONST_KEYS_OWNED.program());
+pub const INF_LST_LIST_ID: Pubkey = Pubkey::new_from_array(*CONST_PDA_KEYS_OWNED.lst_state_list());
 
 // Note on Clock hax:
 // Because `Clock` is a special-case account, and because it's only used
@@ -113,12 +113,13 @@ impl InfAmm {
         amm_context: &AmmContext,
         spl_lsts: HashMap<[u8; 32], [u8; 32]>,
     ) -> Result<Self> {
-        if *keyed_account.key.as_array() != LST_STATE_LIST_ID {
+        if *keyed_account.key.as_array() != *CONST_PDA_KEYS_OWNED.lst_state_list() {
             return Err(anyhow!("Incorrect LST state list keyed_account"));
         }
 
         let mut res = Self {
             inner: InfStd::new(
+                Some(*CONST_KEYS_OWNED.program()),
                 DEFAULT_MAINNET_POOL,
                 keyed_account.account.data.clone().into_boxed_slice(),
                 None,
@@ -199,8 +200,8 @@ impl Amm for InfAmm {
             .iter()
             .map(|l| l.into_lst_state());
         [
-            POOL_STATE_ID,
-            LST_STATE_LIST_ID,
+            *CONST_PDA_KEYS_OWNED.pool_state(),
+            *CONST_PDA_KEYS_OWNED.lst_state_list(),
             *self.inner.pool.lp_token_mint(),
         ]
         .into_iter()
@@ -246,7 +247,7 @@ impl Amm for InfAmm {
 
         let mut all_lst_states = LstStatePackedList::of_acc_data(lst_state_list_data)
             .ok_or(FmtErr(InfErr::AccDeser {
-                pk: LST_STATE_LIST_ID,
+                pk: *CONST_PDA_KEYS_OWNED.lst_state_list(),
             }))?
             .0
             .iter()
@@ -262,6 +263,7 @@ impl Amm for InfAmm {
                 inf1_std::InfStd::update_lst_reserves(
                     lst_reserves,
                     create_pda as &_,
+                    CONST_PDA_KEYS_OWNED.pool_state(),
                     &lst_state,
                     fetched,
                 )?;

@@ -2,16 +2,22 @@ use std::collections::HashMap;
 
 use anyhow::anyhow;
 use generic_array_struct::generic_array_struct;
-use inf1_jup_interface::{consts::INF_MINT_ADDR, find_pda, InfAmm};
-use inf1_std::inf1_ctl_core::{
-    instructions::{
-        liquidity::{add::AddLiquidityIxData, remove::RemoveLiquidityIxData, IxArgs as LiqIxArgs},
-        swap::{
-            v1::{exact_in::SwapExactInIxData, exact_out::SwapExactOutIxData},
-            IxArgs as SwapIxArgs,
+use inf1_jup_interface::{consts::INF_MINT_ADDR, InfAmm};
+use inf1_std::{
+    inf1_ctl_core::{
+        instructions::{
+            liquidity::{
+                add::AddLiquidityIxData, remove::RemoveLiquidityIxData, IxArgs as LiqIxArgs,
+            },
+            swap::{
+                v1::{exact_in::SwapExactInIxData, exact_out::SwapExactOutIxData},
+                IxArgs as SwapIxArgs,
+            },
         },
+        keys::CONST_KEYS_OWNED,
+        token_info::TokenInfo,
     },
-    keys::LST_STATE_LIST_ID,
+    pda::CONST_PDA_KEYS_OWNED,
 };
 use jupiter_amm_interface::{
     Amm, KeyedAccount, QuoteParams, Swap, SwapAndAccountMetas, SwapMode, SwapParams,
@@ -63,7 +69,7 @@ pub fn swap_test(
 ) {
     // init
     let (key, account) = onchain_state
-        .get_key_value(&LST_STATE_LIST_ID.into())
+        .get_key_value(&(*CONST_PDA_KEYS_OWNED.lst_state_list()).into())
         .unwrap();
     let mut inf = InfAmm::new(
         &KeyedAccount {
@@ -194,9 +200,9 @@ fn saam_to_inf_ix(
     };
     let protocol_fee_accumulator = AccountMeta {
         pubkey: Pubkey::new_from_array(
-            inf1_std::pda::find_protocol_fee_accumulator_ata(find_pda, pfa_mint.as_array())
-                .unwrap()
-                .0,
+            *inf1_std::pda::protocol_fee_accumulator_ata_seeds(&TokenInfo::tokenkeg(
+                pfa_mint.as_array(),
+            ))[0],
         ),
         is_signer: false,
         is_writable: true,
@@ -322,7 +328,7 @@ fn saam_to_inf_ix(
     account_metas[0].is_signer = true;
 
     Instruction {
-        program_id: inf1_std::inf1_ctl_core::ID.into(),
+        program_id: Pubkey::new_from_array(*CONST_KEYS_OWNED.program()),
         accounts: account_metas,
         data,
     }

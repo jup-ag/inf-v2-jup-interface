@@ -12,6 +12,11 @@ impl Account for AccountRef<'_> {
     fn data(&self) -> &[u8] {
         &self.0.data
     }
+
+    #[inline]
+    fn lamports(&self) -> u64 {
+        self.0.lamports
+    }
 }
 
 #[derive(Debug, Clone, Copy)]

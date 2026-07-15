@@ -72,6 +72,10 @@ impl Display for FmtErr<InfErr> {
             InfErr::UpdateSvc(e) => Display::fmt(&FmtErr(e), f),
             // no special formatting
             InfErr::NoValidPda => Display::fmt(&self.0, f),
+            InfErr::MissingReserves { mint } => f.write_fmt(format_args!(
+                "MissingReserves: {}",
+                Pubkey::new_from_array(mint)
+            )),
         }
     }
 }
