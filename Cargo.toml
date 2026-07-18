@@ -28,12 +28,13 @@ ureq = { version = "^3", default-features = false }
 # solana crates
 mollusk-svm = { version = "^0.7", default-features = false }
 mollusk-svm-programs-token = { version = "^0.7", default-features = false }
-# vers constraint of crates below based on jupiter-amm-interface solana-sdk subdep
-solana-account = { version = "^3.4.0", default-features = false }
-solana-account-decoder-client-types = { version = "^3.1.12", default-features = false }
+# Version constraints below follow the Agave 4.1 compatibility set used by
+# jupiter-amm-interface.
+solana-account = { version = "^4.3.0", default-features = false }
+solana-account-decoder-client-types = { version = "^4.1.2", default-features = false }
 solana-instruction = { version = "^3.4.0", default-features = false }
 solana-logger = { version = "^3.0.0", default-features = false }
-solana-pubkey = { version = "^3.0.0", default-features = false }
+solana-pubkey = { version = "^4.2.0", default-features = false }
 solana-sha256-hasher = { version = "^3.1.0", default-features = false }
 
 # sanctum-lst-list
