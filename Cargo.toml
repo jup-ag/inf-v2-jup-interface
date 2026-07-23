@@ -3,7 +3,6 @@ resolver = "2"
 
 members = [
     "jup-interface",
-    "test-utils",
 ]
 
 [workspace.package]
@@ -16,24 +15,11 @@ version = "0.1.0"
 # and enable individual features in indiv crates
 anyhow = { version = "^1", default-features = false }
 backoff = { version = "^0.4", default-features = false }
-generic-array-struct = { version = "^0.3.1", default-features = false }
-glob = { version = "^0.3", default-features = false }
-jupiter-amm-interface = { version = ">=1.0.0-beta.0, <2", default-features = false }
-lazy_static = { version = "^1", default-features = false }
-rust_decimal = { version = "^1.36.0", default-features = false } # vers constraint based on jupiter-amm-interface
-serde = { version = "^1", default-features = false }
-serde_json = { version = "^1", default-features = false }
 ureq = { version = "^3", default-features = false }
 
 # solana crates
-mollusk-svm = { version = "^0.7", default-features = false }
-mollusk-svm-programs-token = { version = "^0.7", default-features = false }
 # Version constraints below follow the Agave 4.1 compatibility set used by
-# jupiter-amm-interface.
-solana-account = { version = "^4.3.0", default-features = false }
-solana-account-decoder-client-types = { version = "^4.1.2", default-features = false }
-solana-instruction = { version = "^3.4.0", default-features = false }
-solana-logger = { version = "^3.0.0", default-features = false }
+# jupiter-core.
 solana-pubkey = { version = "^4.2.0", default-features = false }
 solana-sha256-hasher = { version = "^3.1.0", default-features = false }
 
@@ -42,6 +28,3 @@ sanctum-lst-list = { git = "https://github.com/jup-ag/sanctum-lst-list.git", rev
 
 # inf-1.5 crates
 inf1-std = { git = "https://github.com/igneous-labs/inf-1.5.git", branch = "master" }
-
-# workspace members
-test-utils = { path = "./test-utils" }
