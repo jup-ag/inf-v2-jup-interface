@@ -11,21 +11,29 @@ use inf1_std::{
             traits::FlatSlabPricingColErr, typedefs::MintNotFoundErr,
             update::FlatSlabPricingUpdateErr,
         },
+        inf1_pp_reserve_v2_std::{
+            errs::{ReserveV2ProgramErr, SameMintErr},
+            pricing::ReserveV2Swap,
+            typedefs::MintNotFoundErr as ReserveV2MintNotFoundErr,
+            update::ReserveV2PricingUpdateErr,
+            ReserveV2PricingColErr,
+        },
         pricing::PricingAgErr,
+        update::UpdatePpErr,
         PricingAg, PricingProgAgErr,
     },
     inf1_svc_ag_std::{
         calc::SvcCalcAgErr,
-        update::{LidoUpdateErr, MarinadeUpdateErr, SplUpdateErr, UpdateSvcErr},
+        update::{
+            InfExtUpdateErr, InfUpdateErr, LidoUpdateErr, MarinadeUpdateErr, SplUpdateErr,
+            UpdateSvcErr,
+        },
         SvcAg,
     },
-    quote::{rebalance::RebalanceQuoteErr, swap::err::SwapQuoteErr},
+    quote::{rebalance::RebalanceQuoteErr, swap::err::QuoteErr},
     update::UpdateErr,
 };
 use solana_pubkey::Pubkey;
-
-#[allow(deprecated)]
-use inf1_std::quote::liquidity::remove::RemoveLiqQuoteErr;
 
 /// Newtype wrapper to enable pretty-printing of pubkeys
 #[repr(transparent)]
@@ -46,6 +54,10 @@ impl Display for FmtErr<InfErr> {
             InfErr::MissingAcc { pk } => {
                 f.write_fmt(format_args!("MissingAcc: {}", Pubkey::new_from_array(pk)))
             }
+            InfErr::MissingReserves { mint } => f.write_fmt(format_args!(
+                "MissingReserves: {}",
+                Pubkey::new_from_array(mint)
+            )),
             InfErr::MissingSplData { mint } => f.write_fmt(format_args!(
                 "MissingSplData: {}",
                 Pubkey::new_from_array(mint)
@@ -70,15 +82,13 @@ impl Display for FmtErr<InfErr> {
             // inner wrapper
             InfErr::PricingProg(e) => Display::fmt(&FmtErr(e), f),
             InfErr::RebalanceQuote(e) => Display::fmt(&FmtErr(e), f),
-            InfErr::RemoveLiqQuote(e) => Display::fmt(&FmtErr(e), f),
             InfErr::SwapQuote(e) => Display::fmt(&FmtErr(e), f),
             InfErr::UpdatePp(e) => Display::fmt(&FmtErr(e), f),
             InfErr::UpdateSvc(e) => Display::fmt(&FmtErr(e), f),
 
-            // no need to wrap, no pubkey fields
-            InfErr::AddLiqQuote(e) => Display::fmt(&e, f),
-
-            // no special formatting
+            // dont need to wrap inner in FmtErr since these errs do not
+            // contain pubkey fields
+            InfErr::Ctl(e) => Display::fmt(&e, f),
             InfErr::NoValidPda => Display::fmt(&self.0, f),
         }
     }
@@ -92,7 +102,7 @@ impl Display for FmtErr<UpdateErr<InfErr>> {
             UpdateErr::AccMissing { pk } => {
                 f.write_fmt(format_args!("MissingAcc: {}", Pubkey::new_from_array(pk)))
             }
-            UpdateErr::Inner(_) => Display::fmt(&self.0, f),
+            UpdateErr::Inner(e) => Display::fmt(&FmtErr(e), f),
         }
     }
 }
@@ -104,6 +114,7 @@ impl Display for FmtErr<PricingProgAgErr> {
         match self.0 {
             PricingAg::FlatFee(e) => Display::fmt(&FmtErr(e), f),
             PricingAg::FlatSlab(e) => Display::fmt(&FmtErr(e), f),
+            PricingAg::ReserveV2(e) => Display::fmt(&FmtErr(e), f),
         }
     }
 }
@@ -130,6 +141,69 @@ impl Display for FmtErr<FlatSlabPricingColErr> {
     }
 }
 
+impl Display for FmtErr<MintNotFoundErr> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let MintNotFoundErr { mint, .. } = self.0;
+        f.write_fmt(format_args!(
+            "MintNotFound: {}",
+            Pubkey::new_from_array(mint)
+        ))
+    }
+}
+
+impl Display for FmtErr<ReserveV2PricingColErr> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            ReserveV2PricingColErr::Program(e) => Display::fmt(&FmtErr(e), f),
+            ReserveV2PricingColErr::Ctl(e) => Display::fmt(&e, f),
+            ReserveV2PricingColErr::NotUpdated => Display::fmt(&self.0, f),
+        }
+    }
+}
+
+impl Display for FmtErr<ReserveV2ProgramErr> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            ReserveV2ProgramErr::MintNotFound(ReserveV2MintNotFoundErr { mint, .. }) => f
+                .write_fmt(format_args!(
+                    "MintNotFound: {}",
+                    Pubkey::new_from_array(mint)
+                )),
+            ReserveV2ProgramErr::SameMint(SameMintErr { mint }) => {
+                f.write_fmt(format_args!("SameMint: {}", Pubkey::new_from_array(mint)))
+            }
+            ReserveV2ProgramErr::CantRemoveRequiredMint
+            | ReserveV2ProgramErr::FeeNanosOutOfRange(_)
+            | ReserveV2ProgramErr::MathOverflow
+            | ReserveV2ProgramErr::NegativeBandDelta
+            | ReserveV2ProgramErr::OverCap(_)
+            | ReserveV2ProgramErr::ThresholdNanosOutOfRange(_)
+            | ReserveV2ProgramErr::UnsupportedDeprecatedInstruction
+            | ReserveV2ProgramErr::WsolBalanceGtPoolSolValue(_)
+            | ReserveV2ProgramErr::ZeroRetainedValue
+            | ReserveV2ProgramErr::ZeroPoolSolValue => Display::fmt(&self.0, f),
+        }
+    }
+}
+
+impl Display for FmtErr<PricingAgErr> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            PricingAg::FlatFee(e) => Display::fmt(&e, f),
+            PricingAg::FlatSlab(e) => Display::fmt(&e, f),
+            PricingAg::ReserveV2(e) => Display::fmt(&FmtErr(e), f),
+        }
+    }
+}
+
+impl Display for FmtErr<ReserveV2Swap<ReserveV2ProgramErr, ReserveV2ProgramErr>> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            ReserveV2Swap::Flat(e) | ReserveV2Swap::RangeOut(e) => Display::fmt(&FmtErr(e), f),
+        }
+    }
+}
+
 impl Display for FmtErr<RebalanceQuoteErr<SvcCalcAgErr, SvcCalcAgErr>> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self.0 {
@@ -142,30 +216,17 @@ impl Display for FmtErr<RebalanceQuoteErr<SvcCalcAgErr, SvcCalcAgErr>> {
     }
 }
 
-#[allow(deprecated)]
-impl Display for FmtErr<RemoveLiqQuoteErr<SvcCalcAgErr, PricingAgErr>> {
+impl Display for FmtErr<QuoteErr<SvcCalcAgErr, SvcCalcAgErr, PricingAgErr>> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self.0 {
-            RemoveLiqQuoteErr::NotEnoughLiquidity(e) => Display::fmt(&FmtErr(e), f),
+            QuoteErr::NotEnoughLiquidity(e) => Display::fmt(&FmtErr(e), f),
+            QuoteErr::Pricing(e) => Display::fmt(&FmtErr(e), f),
             // all variants here dont have any fields that require formatting
-            RemoveLiqQuoteErr::OutCalc(_)
-            | RemoveLiqQuoteErr::Pricing(_)
-            | RemoveLiqQuoteErr::Overflow
-            | RemoveLiqQuoteErr::ZeroValue => Display::fmt(&self.0, f),
-        }
-    }
-}
-
-impl Display for FmtErr<SwapQuoteErr<SvcCalcAgErr, SvcCalcAgErr, PricingAgErr>> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self.0 {
-            SwapQuoteErr::NotEnoughLiquidity(e) => Display::fmt(&FmtErr(e), f),
-            // all variants here dont have any fields that require formatting
-            SwapQuoteErr::InpCalc(_)
-            | SwapQuoteErr::OutCalc(_)
-            | SwapQuoteErr::Overflow
-            | SwapQuoteErr::Pricing(_)
-            | SwapQuoteErr::ZeroValue => Display::fmt(&self.0, f),
+            QuoteErr::InpCalc(_)
+            | QuoteErr::InpDisabled
+            | QuoteErr::OutCalc(_)
+            | QuoteErr::PoolLoss
+            | QuoteErr::ZeroValue => Display::fmt(&self.0, f),
         }
     }
 }
@@ -179,11 +240,12 @@ impl Display for FmtErr<NotEnoughLiquidityErr> {
     }
 }
 
-impl Display for FmtErr<PricingAg<FlatFeePricingUpdateErr, FlatSlabPricingUpdateErr>> {
+impl Display for FmtErr<UpdatePpErr> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self.0 {
             PricingAg::FlatFee(e) => Display::fmt(&FmtErr(e), f),
             PricingAg::FlatSlab(e) => Display::fmt(&FmtErr(e), f),
+            PricingAg::ReserveV2(e) => Display::fmt(&FmtErr(e), f),
         }
     }
 }
@@ -208,15 +270,48 @@ impl Display for FmtErr<FlatSlabPricingUpdateErr> {
     }
 }
 
+impl Display for FmtErr<ReserveV2PricingUpdateErr> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            ReserveV2PricingUpdateErr::AccDeser { pk } => {
+                f.write_fmt(format_args!("AccDeser: {}", Pubkey::new_from_array(pk)))
+            }
+        }
+    }
+}
+
 impl Display for FmtErr<UpdateSvcErr> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self.0 {
+            SvcAg::Inf(e) => Display::fmt(&FmtErr(e), f),
+            SvcAg::InfExt(e) => Display::fmt(&FmtErr(e), f),
             SvcAg::Lido(e) => Display::fmt(&FmtErr(e), f),
             SvcAg::Marinade(e) => Display::fmt(&FmtErr(e), f),
             SvcAg::SanctumSpl(e) | SvcAg::SanctumSplMulti(e) | SvcAg::Spl(e) => {
                 Display::fmt(&FmtErr(e), f)
             }
             SvcAg::Wsol(_infallible) => unreachable!(),
+        }
+    }
+}
+
+impl Display for FmtErr<InfUpdateErr> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            InfUpdateErr::AccDeser { pk } => {
+                f.write_fmt(format_args!("AccDeser: {}", Pubkey::new_from_array(pk)))
+            }
+        }
+    }
+}
+
+impl Display for FmtErr<InfExtUpdateErr> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            InfExtUpdateErr::AccDeser { pk } => {
+                f.write_fmt(format_args!("AccDeser: {}", Pubkey::new_from_array(pk)))
+            }
+            InfExtUpdateErr::Ctl(e) => Display::fmt(&e, f),
         }
     }
 }

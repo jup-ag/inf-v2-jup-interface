@@ -1,9 +1,11 @@
-use inf1_jup_interface::consts::WSOL_MINT_ADDR;
+use inf1_jup_interface::consts::{
+    INF_LST_LIST_ID, INF_MINT_ADDR, RESERVE_V2_LST_LIST_ID, WSOL_MINT_ADDR,
+};
 use inf1_std::inf1_svc_ag_std::{
     inf1_svc_lido_core::solido_legacy_core::STSOL_MINT_ADDR,
     inf1_svc_marinade_core::sanctum_marinade_liquid_staking_core::MSOL_MINT_ADDR,
 };
-use jupiter_amm_interface::{QuoteParams, SwapMode};
+use jupiter_amm_interface::{FeeMode, QuoteParams, SwapMode};
 use solana_pubkey::Pubkey;
 use test_utils::{KeyedUiAccount, ALL_FIXTURES, CONST_PUBKEYS};
 
@@ -14,6 +16,7 @@ const QUOTE_PARAMS: QuoteParams = QuoteParams {
     input_mint: Pubkey::new_from_array(WSOL_MINT_ADDR),
     output_mint: Pubkey::new_from_array([0u8; 32]),
     swap_mode: SwapMode::ExactOut,
+    fee_mode: FeeMode::Normal,
 };
 
 fn fixtures_accs_base() -> SwapUserAccs<&'static str> {
@@ -25,6 +28,7 @@ fn fixtures_accs_base() -> SwapUserAccs<&'static str> {
 #[test]
 fn swap_exact_out_wsol_to_jupsol_fixture_basic() {
     swap_test(
+        INF_LST_LIST_ID,
         QuoteParams {
             output_mint: *CONST_PUBKEYS.jupsol_mint(),
             ..QUOTE_PARAMS
@@ -39,6 +43,7 @@ fn swap_exact_out_wsol_to_jupsol_fixture_basic() {
 #[test]
 fn swap_exact_out_wsol_to_msol_fixture_basic() {
     swap_test(
+        INF_LST_LIST_ID,
         QuoteParams {
             output_mint: MSOL_MINT_ADDR.into(),
             amount: 7698,
@@ -54,6 +59,7 @@ fn swap_exact_out_wsol_to_msol_fixture_basic() {
 #[test]
 fn swap_exact_out_wsol_to_stsol_fixture_basic() {
     swap_test(
+        INF_LST_LIST_ID,
         QuoteParams {
             output_mint: STSOL_MINT_ADDR.into(),
             amount: 6969,
@@ -63,5 +69,21 @@ fn swap_exact_out_wsol_to_stsol_fixture_basic() {
         fixtures_accs_base()
             .with_out_token_acc("stsol-token-acc")
             .map(|n| KeyedUiAccount::from_test_fixtures_json(n).into_keyed_account()),
+    );
+}
+
+#[test]
+fn reserve_v2_swap_exact_out_wsol_to_inf_fixture_basic() {
+    swap_test(
+        RESERVE_V2_LST_LIST_ID,
+        QuoteParams {
+            amount: 1_000,
+            output_mint: INF_MINT_ADDR.into(),
+            ..QUOTE_PARAMS
+        },
+        &ALL_FIXTURES,
+        fixtures_accs_base()
+            .with_out_token_acc("inf-token-acc")
+            .map(|name| KeyedUiAccount::from_test_fixtures_json(name).into_keyed_account()),
     );
 }

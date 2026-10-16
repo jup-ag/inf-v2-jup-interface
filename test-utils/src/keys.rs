@@ -9,6 +9,9 @@ pub struct ConstKeys<T> {
     pub bpf_loader_upgradeable: T,
     // programs
     pub inf_ctl_prog: T,
+    pub reserve_v2_prog: T,
+    pub reserve_v2_pp_prog: T,
+    pub inf_svc_prog: T,
     pub flatslab_pp_prog: T,
     pub lido_calc_prog: T,
     pub marinade_calc_prog: T,
@@ -40,6 +43,9 @@ pub const CONST_KEYS_STR: ConstKeys<&'static str> = ConstKeys::memset("")
     .const_with_sysvar_clock("SysvarC1ock11111111111111111111111111111111")
     .const_with_bpf_loader_upgradeable("BPFLoaderUpgradeab1e11111111111111111111111")
     .const_with_inf_ctl_prog("5ocnV1qiCgaQR8Jb8xWnVbApfaygJ8tNoZfgPwsgx9kx")
+    .const_with_reserve_v2_prog("un27kVAKYscfzvrkNeYkNZ74tW9o4txuArAweftjakw")
+    .const_with_reserve_v2_pp_prog("uppoVuoFZuXisHkrxCU96VvNibU6vzxkEpeH3WbmnEn")
+    .const_with_inf_svc_prog("1nf7dspGYz1CTALJbtNgjvcSYWiFz5N3c2EuUZLSWCL")
     .const_with_flatslab_pp_prog("s1b6NRXj6ygNu1QMKXh2H9LUR2aPApAAm1UQ2DjdhNV")
     .const_with_lido_calc_prog("1idUSy4MGGKyKhvjSnGZ6Zc7Q4eKQcibym4BkEEw9KR")
     .const_with_marinade_calc_prog("mare3SCyfZkAndpBRBeonETmkCCB3TJTTrz8ZN2dnhP")

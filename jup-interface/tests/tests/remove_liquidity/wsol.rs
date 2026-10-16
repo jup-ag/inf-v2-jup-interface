@@ -1,5 +1,7 @@
-use inf1_jup_interface::consts::{INF_MINT_ADDR, WSOL_MINT_ADDR};
-use jupiter_amm_interface::{QuoteParams, SwapMode};
+use inf1_jup_interface::consts::{
+    INF_LST_LIST_ID, INF_MINT_ADDR, RESERVE_V2_LST_LIST_ID, RESERVE_V2_MINT_ADDR, WSOL_MINT_ADDR,
+};
+use jupiter_amm_interface::{FeeMode, QuoteParams, SwapMode};
 use test_utils::{KeyedUiAccount, ALL_FIXTURES};
 
 use crate::common::{swap_test, SwapUserAccs};
@@ -14,13 +16,44 @@ fn fixtures_accs() -> SwapUserAccs<&'static str> {
 #[test]
 fn remove_liq_wsol_fixture_basic() {
     swap_test(
+        INF_LST_LIST_ID,
         QuoteParams {
             amount: 1_000_000_000,
             input_mint: INF_MINT_ADDR.into(),
             output_mint: WSOL_MINT_ADDR.into(),
             swap_mode: SwapMode::ExactIn,
+            fee_mode: FeeMode::Normal,
         },
         &ALL_FIXTURES,
         fixtures_accs().map(|n| KeyedUiAccount::from_test_fixtures_json(n).into_keyed_account()),
     );
+}
+
+fn reserve_v2_remove_liq(swap_mode: SwapMode) {
+    swap_test(
+        RESERVE_V2_LST_LIST_ID,
+        QuoteParams {
+            amount: 1_000,
+            input_mint: RESERVE_V2_MINT_ADDR.into(),
+            output_mint: WSOL_MINT_ADDR.into(),
+            swap_mode,
+            fee_mode: FeeMode::Normal,
+        },
+        &ALL_FIXTURES,
+        SwapUserAccs::default()
+            .with_signer("inf-token-acc-owner")
+            .with_inp_token_acc("reserve-v2-lp-token-acc")
+            .with_out_token_acc("wsol-token-acc")
+            .map(|name| KeyedUiAccount::from_test_fixtures_json(name).into_keyed_account()),
+    );
+}
+
+#[test]
+fn reserve_v2_remove_liq_wsol_exact_in_fixture_basic() {
+    reserve_v2_remove_liq(SwapMode::ExactIn);
+}
+
+#[test]
+fn reserve_v2_remove_liq_wsol_exact_out_fixture_basic() {
+    reserve_v2_remove_liq(SwapMode::ExactOut);
 }
