@@ -1,4 +1,4 @@
-use inf1_jup_interface::consts::INF_MINT_ADDR;
+use inf1_jup_interface::consts::{INF_LST_LIST_ID, INF_MINT_ADDR};
 use inf1_std::inf1_svc_ag_std::inf1_svc_marinade_core::sanctum_marinade_liquid_staking_core::MSOL_MINT_ADDR;
 use jupiter_amm_interface::{FeeMode, QuoteParams, SwapMode};
 use test_utils::{KeyedUiAccount, ALL_FIXTURES};
@@ -15,6 +15,7 @@ fn fixtures_accs() -> SwapUserAccs<&'static str> {
 #[test]
 fn add_liq_msol_fixture_basic() {
     swap_test(
+        INF_LST_LIST_ID,
         QuoteParams {
             amount: 1_000_000_000,
             input_mint: MSOL_MINT_ADDR.into(),

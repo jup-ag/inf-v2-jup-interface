@@ -1,4 +1,4 @@
-use inf1_jup_interface::consts::WSOL_MINT_ADDR;
+use inf1_jup_interface::consts::{INF_LST_LIST_ID, WSOL_MINT_ADDR};
 use inf1_std::inf1_svc_ag_std::{
     inf1_svc_lido_core::solido_legacy_core::STSOL_MINT_ADDR,
     inf1_svc_marinade_core::sanctum_marinade_liquid_staking_core::MSOL_MINT_ADDR,
@@ -26,6 +26,7 @@ fn fixtures_accs_base() -> SwapUserAccs<&'static str> {
 #[test]
 fn swap_exact_in_stsol_to_wsol_fixture_basic() {
     swap_test(
+        INF_LST_LIST_ID,
         QuoteParams {
             output_mint: WSOL_MINT_ADDR.into(),
             ..QUOTE_PARAMS
@@ -40,6 +41,7 @@ fn swap_exact_in_stsol_to_wsol_fixture_basic() {
 #[test]
 fn swap_exact_in_stsol_to_jupsol_fixture_basic() {
     swap_test(
+        INF_LST_LIST_ID,
         QuoteParams {
             output_mint: *CONST_PUBKEYS.jupsol_mint(),
             ..QUOTE_PARAMS
@@ -54,6 +56,7 @@ fn swap_exact_in_stsol_to_jupsol_fixture_basic() {
 #[test]
 fn swap_exact_in_stsol_to_msol_fixture_basic() {
     swap_test(
+        INF_LST_LIST_ID,
         QuoteParams {
             output_mint: MSOL_MINT_ADDR.into(),
             amount: 6969,

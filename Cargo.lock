@@ -826,7 +826,7 @@ dependencies = [
 [[package]]
 name = "inf1-core"
 version = "0.1.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 dependencies = [
  "inf1-ctl-core",
  "inf1-pp-core",
@@ -836,11 +836,12 @@ dependencies = [
 [[package]]
 name = "inf1-ctl-core"
 version = "0.1.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 dependencies = [
  "const-crypto",
  "generic-array-struct",
  "inf1-svc-core",
+ "inf1-svc-generic",
  "sanctum-fee-ratio",
  "sanctum-u64-ratio",
 ]
@@ -861,21 +862,23 @@ dependencies = [
 [[package]]
 name = "inf1-pp-ag-core"
 version = "0.1.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 dependencies = [
  "inf1-pp-core",
  "inf1-pp-flatfee-core",
  "inf1-pp-flatslab-core",
+ "inf1-pp-reserve-v2-core",
 ]
 
 [[package]]
 name = "inf1-pp-ag-std"
 version = "0.1.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 dependencies = [
  "inf1-pp-ag-core",
  "inf1-pp-flatfee-std",
  "inf1-pp-flatslab-std",
+ "inf1-pp-reserve-v2-std",
  "inf1-pp-std",
  "inf1-update-traits",
 ]
@@ -883,7 +886,7 @@ dependencies = [
 [[package]]
 name = "inf1-pp-core"
 version = "0.1.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 dependencies = [
  "generic-array-struct",
 ]
@@ -891,7 +894,7 @@ dependencies = [
 [[package]]
 name = "inf1-pp-flatfee-core"
 version = "0.2.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 dependencies = [
  "const-crypto",
  "generic-array-struct",
@@ -904,7 +907,7 @@ dependencies = [
 [[package]]
 name = "inf1-pp-flatfee-std"
 version = "0.2.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 dependencies = [
  "inf1-pp-flatfee-core",
  "inf1-pp-std",
@@ -913,7 +916,7 @@ dependencies = [
 [[package]]
 name = "inf1-pp-flatslab-core"
 version = "0.1.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 dependencies = [
  "const-crypto",
  "generic-array-struct",
@@ -924,16 +927,41 @@ dependencies = [
 [[package]]
 name = "inf1-pp-flatslab-std"
 version = "0.1.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 dependencies = [
  "inf1-pp-flatslab-core",
  "inf1-pp-std",
 ]
 
 [[package]]
+name = "inf1-pp-reserve-v2-core"
+version = "0.1.0"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
+dependencies = [
+ "const-crypto",
+ "generic-array-struct",
+ "inf1-ctl-core",
+ "inf1-pp-core",
+ "sanctum-fee-ratio",
+ "sanctum-u64-ratio",
+]
+
+[[package]]
+name = "inf1-pp-reserve-v2-std"
+version = "0.1.0"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
+dependencies = [
+ "const-crypto",
+ "inf1-ctl-core",
+ "inf1-pp-reserve-v2-core",
+ "inf1-pp-std",
+ "inf1-update-traits",
+]
+
+[[package]]
 name = "inf1-pp-std"
 version = "0.1.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 dependencies = [
  "inf1-pp-core",
  "inf1-update-traits",
@@ -942,7 +970,7 @@ dependencies = [
 [[package]]
 name = "inf1-std"
 version = "0.1.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 dependencies = [
  "inf1-core",
  "inf1-pp-ag-std",
@@ -952,7 +980,7 @@ dependencies = [
 [[package]]
 name = "inf1-svc-ag-core"
 version = "0.1.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 dependencies = [
  "inf1-ctl-core",
  "inf1-svc-core",
@@ -966,7 +994,7 @@ dependencies = [
 [[package]]
 name = "inf1-svc-ag-std"
 version = "0.1.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 dependencies = [
  "inf1-svc-ag-core",
  "inf1-svc-inf-std",
@@ -980,7 +1008,7 @@ dependencies = [
 [[package]]
 name = "inf1-svc-core"
 version = "0.1.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 dependencies = [
  "generic-array-struct",
 ]
@@ -988,7 +1016,7 @@ dependencies = [
 [[package]]
 name = "inf1-svc-generic"
 version = "0.1.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 dependencies = [
  "const-crypto",
  "generic-array-struct",
@@ -998,8 +1026,9 @@ dependencies = [
 [[package]]
 name = "inf1-svc-inf-std"
 version = "0.1.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 dependencies = [
+ "const-crypto",
  "inf1-ctl-core",
  "inf1-svc-std",
 ]
@@ -1007,7 +1036,7 @@ dependencies = [
 [[package]]
 name = "inf1-svc-lido-core"
 version = "0.1.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 dependencies = [
  "const-crypto",
  "generic-array-struct",
@@ -1020,7 +1049,7 @@ dependencies = [
 [[package]]
 name = "inf1-svc-lido-std"
 version = "0.1.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 dependencies = [
  "inf1-svc-lido-core",
  "inf1-svc-std",
@@ -1029,7 +1058,7 @@ dependencies = [
 [[package]]
 name = "inf1-svc-marinade-core"
 version = "0.1.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 dependencies = [
  "const-crypto",
  "generic-array-struct",
@@ -1043,7 +1072,7 @@ dependencies = [
 [[package]]
 name = "inf1-svc-marinade-std"
 version = "0.1.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 dependencies = [
  "inf1-svc-marinade-core",
  "inf1-svc-std",
@@ -1052,7 +1081,7 @@ dependencies = [
 [[package]]
 name = "inf1-svc-spl-core"
 version = "0.1.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 dependencies = [
  "const-crypto",
  "generic-array-struct",
@@ -1067,7 +1096,7 @@ dependencies = [
 [[package]]
 name = "inf1-svc-spl-std"
 version = "0.1.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 dependencies = [
  "inf1-svc-spl-core",
  "inf1-svc-std",
@@ -1076,7 +1105,7 @@ dependencies = [
 [[package]]
 name = "inf1-svc-std"
 version = "0.1.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 dependencies = [
  "inf1-svc-core",
  "inf1-update-traits",
@@ -1085,7 +1114,7 @@ dependencies = [
 [[package]]
 name = "inf1-svc-wsol-core"
 version = "0.1.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 dependencies = [
  "const-crypto",
  "generic-array-struct",
@@ -1095,7 +1124,7 @@ dependencies = [
 [[package]]
 name = "inf1-svc-wsol-std"
 version = "0.1.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 dependencies = [
  "inf1-svc-std",
  "inf1-svc-wsol-core",
@@ -1104,7 +1133,7 @@ dependencies = [
 [[package]]
 name = "inf1-update-traits"
 version = "0.1.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 
 [[package]]
 name = "instant"
@@ -1561,7 +1590,7 @@ dependencies = [
 [[package]]
 name = "sanctum-token-ratio-compat"
 version = "0.1.0"
-source = "git+https://github.com/igneous-labs/inf-1.5.git?branch=master#887c1a0ba9d3a3f43d82f031102d913ff6e50b0f"
+source = "git+https://github.com/igneous-labs/inf-1.5.git?rev=d4bfdd4d1d34985f8639433c0308941fc84bf1a2#d4bfdd4d1d34985f8639433c0308941fc84bf1a2"
 dependencies = [
  "sanctum-fee-ratio",
  "sanctum-u64-ratio",

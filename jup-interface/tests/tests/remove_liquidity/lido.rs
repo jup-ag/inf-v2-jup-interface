@@ -1,4 +1,4 @@
-use inf1_jup_interface::consts::INF_MINT_ADDR;
+use inf1_jup_interface::consts::{INF_LST_LIST_ID, INF_MINT_ADDR};
 use inf1_std::inf1_svc_ag_std::inf1_svc_lido_core::solido_legacy_core::STSOL_MINT_ADDR;
 use jupiter_amm_interface::{FeeMode, QuoteParams, SwapMode};
 use test_utils::{KeyedUiAccount, ALL_FIXTURES};
@@ -15,6 +15,7 @@ fn fixtures_accs() -> SwapUserAccs<&'static str> {
 #[test]
 fn remove_liq_stsol_fixture_basic() {
     swap_test(
+        INF_LST_LIST_ID,
         QuoteParams {
             amount: 6969,
             input_mint: INF_MINT_ADDR.into(),

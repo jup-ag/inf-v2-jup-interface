@@ -27,4 +27,4 @@ solana-sha256-hasher = { version = "^3.1.0", default-features = false }
 sanctum-lst-list = { git = "https://github.com/jup-ag/sanctum-lst-list.git", rev = "dbf31ad5e91e4b0f7402c05bc56c779b4049c8c7" }
 
 # inf-1.5 crates
-inf1-std = { git = "https://github.com/igneous-labs/inf-1.5.git", branch = "master" }
+inf1-std = { git = "https://github.com/igneous-labs/inf-1.5.git", rev = "d4bfdd4d1d34985f8639433c0308941fc84bf1a2" }
