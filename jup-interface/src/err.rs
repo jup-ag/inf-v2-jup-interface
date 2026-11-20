@@ -290,7 +290,7 @@ impl Display for FmtErr<UpdateSvcErr> {
             SvcAg::SanctumSpl(e) | SvcAg::SanctumSplMulti(e) | SvcAg::Spl(e) => {
                 Display::fmt(&FmtErr(e), f)
             }
-            SvcAg::Wsol(_infallible) => unreachable!(),
+            SvcAg::Sols(_infallible) | SvcAg::Wsol(_infallible) => unreachable!(),
         }
     }
 }
